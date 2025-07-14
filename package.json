@@ -1,0 +1,18 @@
+{
+  "name": "whatsapp-api-server",
+  "version": "1.0.0",
+  "description": "A Dockerized service to send WhatsApp messages via an API.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "Gemini",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "whatsapp-web.js": "^1.23.0",
+    "qrcode": "^1.5.3",
+    "ws": "^8.13.0",
+    "uuid": "^9.0.0"
+  }
+}

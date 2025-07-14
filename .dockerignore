@@ -1,0 +1,12 @@
+# Ignore node_modules, it will be installed in the container
+node_modules
+
+# Ignore local session data, it should be mounted as a volume
+.wwebjs_auth
+
+# Ignore git files
+.git
+.gitignore
+
+# Ignore Dockerfile
+Dockerfile

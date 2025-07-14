@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp API Server</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>WhatsApp API Server</h1>
+        <div id="status-container">
+            <p id="status">Connecting to server...</p>
+        </div>
+        <div id="qr-container" class="hidden">
+            <p>Scan this QR code with your WhatsApp mobile app.</p>
+            <img id="qr-image" src="" alt="QR Code">
+        </div>
+        <div id="api-key-container" class="hidden">
+            <h2>Client Connected!</h2>
+            <p>Save your API Key. You will only see it once!</p>
+            <div class="key-box">
+                <code id="api-key"></code>
+                <button id="copy-button">Copy</button>
+            </div>
+            <p class="usage-info">
+                <strong>Usage Example:</strong><br>
+                <pre><code>curl -X POST http://localhost:3000/send \
+-H "Authorization: Bearer &lt;YOUR_API_KEY&gt;" \
+-H "Content-Type: application/json" \
+-d '{"number": "1234567890", "message": "Hello from my API!"}'</code></pre>
+            </p>
+        </div>
+    </div>
+    <script src="client.js"></script>
+</body>
+</html>

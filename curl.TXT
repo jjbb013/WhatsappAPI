@@ -1,0 +1,7 @@
+curl -X POST http://localhost:3000/send \
+    -H "Authorization: Bearer 597bf25a-b114-482e-bb9d-6b442bf69e09" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "number": "8613764176027",
+        "message": "Hello from my Dockerized API!"
+    }'
