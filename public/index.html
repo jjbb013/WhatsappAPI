@@ -8,28 +8,34 @@
 </head>
 <body>
     <div class="container">
-        <h1>WhatsApp API Server</h1>
+        <h1 style="font-size:2em;color:#2d7be5;text-align:center;margin-bottom:20px;">玮清出品 必属精品</h1>
+        <div style="text-align:center;margin-bottom:20px;">
+            <button onclick="location.href='/login.html'" style="font-size:1.1em;margin:0 10px;">返回登录页</button>
+            <button onclick="location.href='/schedule.html'" style="font-size:1.1em;margin:0 10px;">定时任务/批量发送</button>
+        </div>
+        <h1>WhatsApp API 服务器</h1>
         <div id="status-container">
-            <p id="status">Connecting to server...</p>
+            <p id="status">正在连接服务器...</p>
         </div>
         <div id="qr-container" class="hidden">
-            <p>Scan this QR code with your WhatsApp mobile app.</p>
-            <img id="qr-image" src="" alt="QR Code">
+            <p>请使用您的 WhatsApp 手机应用扫描此二维码。</p>
+            <img id="qr-image" src="" alt="二维码">
         </div>
         <div id="api-key-container" class="hidden">
-            <h2>Client Connected!</h2>
-            <p>Save your API Key. You will only see it once!</p>
+            <h2>客户端已连接！</h2>
+            <p>请保存您的 API Key。您只会看到一次！</p>
             <div class="key-box">
                 <code id="api-key"></code>
-                <button id="copy-button">Copy</button>
+                <button id="copy-button">复制</button>
             </div>
             <p class="usage-info">
-                <strong>Usage Example:</strong><br>
+                <strong>使用示例：</strong><br>
                 <pre><code>curl -X POST http://localhost:3000/send \
 -H "Authorization: Bearer &lt;YOUR_API_KEY&gt;" \
 -H "Content-Type: application/json" \
 -d '{"number": "1234567890", "message": "Hello from my API!"}'</code></pre>
             </p>
+            <p><a href="/schedule.html">前往定时任务和批量发送</a></p>
         </div>
     </div>
     <script src="client.js"></script>

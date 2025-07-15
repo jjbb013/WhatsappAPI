@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>玮清出品 必属精品</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1 style="font-size:2.2em;color:#2d7be5;text-align:center;margin-bottom:20px;">玮清出品 必属精品</h1>
+        <form id="login-form">
+            <input type="password" id="password" placeholder="密码" required style="font-size:1.2em;">
+            <button type="submit" style="font-size:1.1em;">登录</button>
+        </form>
+        <p id="login-status"></p>
+    </div>
+
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('password').value;
+            const loginStatus = document.getElementById('login-status');
+            if(password !== '984819') { // 如需更换密码，请将 984819 替换为你想要的密码
+                loginStatus.textContent = '密码错误';
+                loginStatus.style.color = 'red';
+                return;
+            }
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    loginStatus.textContent = '登录成功!';
+                    loginStatus.style.color = 'lightgreen';
+                    window.location.href = '/'; // Redirect to main page
+                } else {
+                    loginStatus.textContent = result.message || '登录失败。';
+                    loginStatus.style.color = 'red';
+                }
+            } catch (error) {
+                loginStatus.textContent = '发生未知错误。';
+                loginStatus.style.color = 'red';
+            }
+        });
+    </script>
+</body>
+</html>

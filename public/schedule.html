@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Scheduler</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1 style="font-size:2em;color:#2d7be5;text-align:center;margin-bottom:20px;">玮清出品 必属精品</h1>
+        <div style="text-align:center;margin-bottom:20px;">
+            <button onclick="location.href='/index.html'" style="font-size:1.1em;margin:0 10px;">返回主页</button>
+            <button onclick="location.href='/login.html'" style="font-size:1.1em;margin:0 10px;">返回登录页</button>
+        </div>
+        
+
+
+
+        <h2>新建定时任务</h2>
+        <form id="schedule-form">
+            <div class="form-group">
+                <label for="cron">Cron 表达式：</label>
+                <input type="text" id="cron" name="cron" placeholder="如：* * * * *" required style="width:100%;font-size:1.1em;">
+                <div style="font-size:0.78em;color:#c9d1d9;background:#22272e;border-radius:4px;padding:7px 12px;margin-top:4px;line-height:1.5;font-family:monospace;">
+                    <span style="color:#8b949e;">// Cron 表达式格式：分 时 日 月 星期</span><br>
+                    <span style="color:#8b949e;">// 示例：</span><br>
+                    <span style="color:#8b949e;">// * * * * *      每分钟执行一次</span><br>
+                    <span style="color:#8b949e;">// 0 8 * * *      每天 8:00 执行</span><br>
+                    <span style="color:#8b949e;">// 0 9 * * 1      每周一 9:00 执行</span><br>
+                    <span style="color:#8b949e;">// */5 * * * *    每 5 分钟执行一次</span><br>
+                    <span style="color:#8b949e;">// 0 0 1,15 * *   每月 1 日和 15 日 0:00 执行</span><br>
+                    <span style="color:#8b949e;">// 更多用法请参考 crontab.guru</span>
+                </div>
+            </div>
+            <input type="text" id="number" placeholder="接收者号码或群组ID（如：+8613812345678 或 1234567890@g.us）" required>
+            <div class="checkbox-container">
+                <input type="checkbox" id="isGroup">
+                <label for="isGroup">这是一个群组ID</label>
+            </div>
+            <textarea id="message" placeholder="要发送的消息内容" required></textarea>
+            <input type="file" id="image" accept="image/png, image/jpeg, image/jpg">
+            <button type="submit">添加定时任务</button>
+            <p id="schedule-status" style="color: lightgreen;"></p>
+        </form>
+
+        <h2 style="margin-top:32px;">批量发送消息</h2>
+        <form id="batch-send-form">
+            <textarea id="batch-numbers" placeholder="每行一个号码或群组ID（如：+8613812345678 或 1234567890@g.us）" required></textarea>
+            <input type="text" id="batch-message" placeholder="要发送的消息内容" required>
+            <div class="checkbox-container">
+                <input type="checkbox" id="batch-isGroup">
+                <label for="batch-isGroup">这些是群组ID</label>
+            </div>
+            <button type="submit">开始批量发送</button>
+            <p id="batch-send-status"></p>
+        </form>
+
+
+
+        <h2>WhatsApp Groups</h2>
+        <button id="fetch-groups-button">Fetch My Groups</button>
+        <div id="groups-list"></div>
+
+        <hr>
+
+        <h2>Active Tasks</h2>
+        <div id="task-list">
+            <p>No active tasks.</p>
+        </div>
+    </div>
+
+    <script src="lang.js"></script>
+    <script>
+        const scheduleForm = document.getElementById('schedule-form');
+        const scheduleStatus = document.getElementById('schedule-status');
+        const taskList = document.getElementById('task-list');
+        const fetchGroupsButton = document.getElementById('fetch-groups-button');
+        const groupsList = document.getElementById('groups-list');
+        const batchSendForm = document.getElementById('batch-send-form');
+        const batchSendStatus = document.getElementById('batch-send-status');
+
+        async function fetchTasks() {
+            try {
+                const response = await fetch('/tasks', {
+                    headers: {
+                        'Authorization': `Bearer ${sessionStorage.getItem('whatsappApiKey')}`
+                    }
+                });
+                if (response.status === 401) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+                const tasks = await response.json();
+                renderTasks(tasks);
+            } catch (error) {
+                console.error('Error fetching tasks:', error);
+                taskList.innerHTML = '<p style="color: red;">Error loading tasks.</p>';
+            }
+        }
+
+        function renderTasks(tasks) {
+            if (tasks.length === 0) {
+                taskList.innerHTML = '<p>No active tasks.</p>';
+                return;
+            }
+            taskList.innerHTML = '<ul>' + 
+                tasks.map(task => `
+                    <li>
+                        <strong>ID:</strong> ${task.id}<br>
+                        <strong>Cron:</strong> ${task.cron}<br>
+                        <strong>To:</strong> ${task.number} ${task.isGroup ? '(Group)' : ''}<br>
+                        <strong>Message:</strong> "${task.message}"<br>
+                        ${task.imagePath ? `<strong>Image:</strong> <a href="${task.imagePath.replace(/^.*uploads\//, '/uploads/')}" target="_blank">View Image</a><br>` : ''}
+                        <button onclick="cancelTask('${task.id}')">Cancel</button>
+                    </li>
+                `).join('') + '</ul>';
+        }
+
+        async function cancelTask(id) {
+            try {
+                const response = await fetch('/cancel-task', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionStorage.getItem('whatsappApiKey')}`
+                    },
+                    body: JSON.stringify({ id })
+                });
+
+                if (response.status === 401) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                if (response.ok) {
+                    fetchTasks();
+                } else {
+                    const errorData = await response.json();
+                    alert(`Failed to cancel task: ${errorData.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                alert(`Error cancelling task: ${error.message}`);
+            }
+        }
+
+        scheduleForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const cron = document.getElementById('cron').value;
+            const number = document.getElementById('number').value;
+            const message = document.getElementById('message').value;
+            const isGroup = document.getElementById('isGroup').checked;
+            const imageFile = document.getElementById('image').files[0];
+
+            const formData = new FormData();
+            formData.append('cron', cron);
+            formData.append('number', number);
+            formData.append('message', message);
+            formData.append('isGroup', isGroup);
+            if (imageFile) {
+                formData.append('image', imageFile);
+            }
+
+            try {
+                const response = await fetch('/schedule', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${sessionStorage.getItem('whatsappApiKey')}`
+                    },
+                    body: formData
+                });
+
+                if (response.status === 401) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to schedule task.');
+                }
+
+                scheduleStatus.textContent = `Task ${result.id} scheduled successfully!`;
+                scheduleStatus.style.color = 'lightgreen';
+                scheduleForm.reset();
+                fetchTasks();
+            } catch (error) {
+                scheduleStatus.textContent = `Error: ${error.message}`;
+                scheduleStatus.style.color = 'red';
+            }
+        });
+
+        async function fetchGroups() {
+            try {
+                groupsList.innerHTML = '<p>Fetching groups...</p>';
+                const response = await fetch('/groups', {
+                    headers: {
+                        'Authorization': `Bearer ${sessionStorage.getItem('whatsappApiKey')}`
+                    }
+                });
+                if (response.status === 401) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to fetch groups.');
+                }
+                const groups = await response.json();
+                if (groups.length === 0) {
+                    groupsList.innerHTML = '<p>No groups found.</p>';
+                    return;
+                }
+                groupsList.innerHTML = '<ul>' + groups.map(group => `
+                    <li><strong>${group.name}</strong> (ID: ${group.id})</li>
+                `).join('') + '</ul>';
+            } catch (error) {
+                console.error('Error fetching groups:', error);
+                groupsList.innerHTML = '<p style="color: red;">Error loading groups.</p>';
+            }
+        }
+
+        batchSendForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const numbers = document.getElementById('batch-numbers').value.split('\n').filter(n => n.trim() !== '');
+            const message = document.getElementById('batch-message').value;
+            const isGroup = document.getElementById('batch-isGroup').checked;
+
+            if (numbers.length === 0 || !message) {
+                batchSendStatus.textContent = 'Please enter at least one number and a message.';
+                batchSendStatus.style.color = 'red';
+                return;
+            }
+
+            batchSendStatus.textContent = 'Starting batch send...';
+            batchSendStatus.style.color = 'lightgreen';
+
+            try {
+                const response = await fetch('/batch-send', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionStorage.getItem('whatsappApiKey')}`
+                    },
+                    body: JSON.stringify({ numbers, message, isGroup })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    batchSendStatus.textContent = result.message;
+                    batchSendForm.reset();
+                } else {
+                    batchSendStatus.textContent = `Error: ${result.error}`;
+                    batchSendStatus.style.color = 'red';
+                }
+            } catch (error) {
+                batchSendStatus.textContent = 'An unexpected error occurred.';
+                batchSendStatus.style.color = 'red';
+            }
+        });
+
+        // Initial fetch
+        fetchTasks();
+        fetchGroupsButton.addEventListener('click', fetchGroups);
+    </script>
+</body>
+</html>

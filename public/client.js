@@ -29,6 +29,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 qrContainer.classList.add('hidden');
                 apiKeyContainer.classList.remove('hidden');
                 apiKeyEl.textContent = message.apiKey;
+                // Store the API key in session storage for other pages to use
+                sessionStorage.setItem('whatsappApiKey', message.apiKey);
                 break;
 
             case 'status':
