@@ -1,11 +1,10 @@
-# Use a more full-featured Node.js image to ensure build tools are present
+# 使用官方 Node.js 18 镜像
 FROM node:18
 
-# Set the working directory in the container
+# 设置工作目录
 WORKDIR /usr/src/app
 
-# Install system dependencies required by Puppeteer (Chromium)
-# This is crucial for running in Docker, especially on ARM64 architectures like Apple Silicon
+# 安装 puppeteer/Chromium 依赖
 RUN apt-get update && apt-get install -y \
     chromium \
     libnss3 \
@@ -15,22 +14,23 @@ RUN apt-get update && apt-get install -y \
     libgtk-3-0 \
     libgbm-dev \
     libasound2 \
-    --no-install-recommends
+    --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
 
-# Tell Puppeteer to use the system-installed Chromium
+# 设置 puppeteer 使用系统 Chromium
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
-# Copy package.json and package-lock.json (if available)
+# 复制依赖声明
 COPY package*.json ./
 
-# Install app dependencies
-RUN npm install
+# 安装依赖
+RUN npm install --production
 
-# Bundle app source
+# 复制项目源码
 COPY . .
 
-# Your app binds to port 3000, so expose it
+# 暴露端口
 EXPOSE 3000
 
-# Define the command to run your app
+# 启动服务
 CMD [ "node", "server.js" ]
