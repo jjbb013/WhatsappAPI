@@ -18,6 +18,12 @@
 
 
         <h2>新建定时任务</h2>
+        <div id="time-compare" style="background:#22272e;padding:12px 16px;border-radius:6px;margin-bottom:16px;font-size:1.05em;">
+            <strong>当前服务器时间：</strong><span id="server-time">加载中...</span><br>
+            <strong>上海时间：</strong><span id="shanghai-time">加载中...</span><br>
+            <strong>时差：</strong><span id="tz-diff">计算中...</span><br>
+            <span style="color:#e3b341;">提示：设置 Cron 表达式时，请预留时差（如服务器为 UTC，上海为 UTC+8，需加8小时）。</span>
+        </div>
         <form id="schedule-form" enctype="multipart/form-data">
             <div class="form-group">
                 <label for="cron">Cron 表达式：</label>
@@ -322,6 +328,24 @@
         // Initial fetch
         fetchTasks();
         fetchGroupsButton.addEventListener('click', fetchGroups);
+
+        // 服务器时间与上海时间对比
+        function updateTimes() {
+            // 服务器时间（假设为本地时间）
+            const now = new Date();
+            document.getElementById('server-time').textContent = now.toLocaleString();
+            // 上海时间
+            const shanghai = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+            document.getElementById('shanghai-time').textContent = shanghai.toLocaleString('zh-CN', { hour12: false });
+            // 计算时差（小时）
+            const localOffset = -now.getTimezoneOffset() / 60; // 本地时区，东八区为+8
+            const shanghaiOffset = 8; // 上海为东八区+8
+            let diff = shanghaiOffset - localOffset;
+            let sign = diff > 0 ? '+' : (diff < 0 ? '-' : '');
+            document.getElementById('tz-diff').textContent = (sign ? sign : '') + Math.abs(diff) + ' 小时';
+        }
+        updateTimes();
+        setInterval(updateTimes, 1000);
 
         // 一键复制 Curl 示例
         Array.from(document.getElementsByClassName('copy-btn')).forEach(btn => {
