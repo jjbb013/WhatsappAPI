@@ -5,6 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WhatsApp API Server</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+.copy-btn {
+    background-color: #238636;
+    color: white;
+    border: none;
+    padding: 0.6rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s ease-in-out;
+    flex-shrink: 0;
+    margin-left: 12px;
+    height: 2.2rem;
+    display: inline-flex;
+    align-items: center;
+}
+.copy-btn:hover {
+    background-color: #2ea043;
+}
+.copy-btn:active {
+    background-color: #267339;
+}
+.api-check-section .code-flex {
+    display: flex;
+    align-items: center;
+    margin-bottom: 18px;
+}
+.api-check-section pre {
+    margin: 0;
+    flex: 1 1 auto;
+}
+</style>
 </head>
 <body>
     <div class="container">
@@ -29,13 +61,37 @@
                 <button id="copy-button">复制</button>
             </div>
             <button id="reset-session-btn" style="margin-top:18px;background:#e74c3c;color:#fff;font-size:1em;padding:8px 18px;border:none;border-radius:4px;cursor:pointer;">退出 WhatsApp 登录</button>
-            <p class="usage-info">
-                <strong>使用示例：</strong><br>
-                <pre><code>curl -X POST http://localhost:3000/send \
--H "Authorization: Bearer &lt;YOUR_API_KEY&gt;" \
+            <div class="api-check-section" style="margin:32px 0 24px 0;padding:18px 20px;background:#22272e;border-radius:8px;">
+                <h2 style="color:#2d7be5;">API 接口检查</h2>
+                <div class="code-flex">
+                    <pre style="background:#161b22;color:#c9d1d9;padding:10px 12px 10px 12px;border-radius:4px;overflow-x:auto;"><code id="curl-external">curl -X POST https://whatsapp.1morething.pp.ua/send \
+-H "Authorization: Bearer <span id='token-external' style='color:#e6db74;'></span>" \
 -H "Content-Type: application/json" \
--d '{"number": "1234567890", "message": "Hello from my API!"}'</code></pre>
-            </p>
+-d '{"number": "+8613812345678", "message": "Hello from API!"}'</code></pre>
+                    <button class="copy-btn" data-target="curl-external">复制</button>
+                </div>
+                <div class="code-flex">
+                    <pre style="background:#161b22;color:#c9d1d9;padding:10px 12px 10px 12px;border-radius:4px;overflow-x:auto;"><code id="curl-external-group">curl -X POST https://whatsapp.1morething.pp.ua/send \
+-H "Authorization: Bearer <span id='token-external-group' style='color:#e6db74;'></span>" \
+-H "Content-Type: application/json" \
+-d '{"number": "1234567890@g.us", "message": "Hello group!", "isGroup": true}'</code></pre>
+                    <button class="copy-btn" data-target="curl-external-group">复制</button>
+                </div>
+                <div class="code-flex">
+                    <pre style="background:#161b22;color:#c9d1d9;padding:10px 12px 10px 12px;border-radius:4px;overflow-x:auto;"><code id="curl-internal">curl -X POST http://localhost:3000/send \
+-H "Authorization: Bearer <span id='token-internal' style='color:#e6db74;'></span>" \
+-H "Content-Type: application/json" \
+-d '{"number": "+8613812345678", "message": "Hello from API!"}'</code></pre>
+                    <button class="copy-btn" data-target="curl-internal">复制</button>
+                </div>
+                <div class="code-flex">
+                    <pre style="background:#161b22;color:#c9d1d9;padding:10px 12px 10px 12px;border-radius:4px;overflow-x:auto;"><code id="curl-internal-group">curl -X POST http://localhost:3000/send \
+-H "Authorization: Bearer <span id='token-internal-group' style='color:#e6db74;'></span>" \
+-H "Content-Type: application/json" \
+-d '{"number": "1234567890@g.us", "message": "Hello group!", "isGroup": true}'</code></pre>
+                    <button class="copy-btn" data-target="curl-internal-group">复制</button>
+                </div>
+            </div>
             <p><a href="/schedule.html">前往定时任务和批量发送</a></p>
         </div>
     </div>
@@ -62,6 +118,41 @@
                         });
                 }
             };
+        }
+        // 自动填充 token 到 curl 示例
+        var apiKey = sessionStorage.getItem('whatsappApiKey') || document.getElementById('api-key').textContent;
+        if (apiKey) {
+            var tokenEls = [
+                document.getElementById('token-external'),
+                document.getElementById('token-internal'),
+                document.getElementById('token-external-group'),
+                document.getElementById('token-internal-group')
+            ];
+            tokenEls.forEach(function(el) { if(el) el.textContent = apiKey; });
+            // 生成可复制的 curl
+            function getCurl(type) {
+                if(type === 'curl-external') {
+                    return `curl -X POST https://whatsapp.1morething.pp.ua/send \\\n-H "Authorization: Bearer ${apiKey}" \\\n-H "Content-Type: application/json" \\\n-d '{"number": "+8613812345678", "message": "Hello from API!"}'`;
+                } else if(type === 'curl-external-group') {
+                    return `curl -X POST https://whatsapp.1morething.pp.ua/send \\\n-H "Authorization: Bearer ${apiKey}" \\\n-H "Content-Type: application/json" \\\n-d '{"number": "1234567890@g.us", "message": "Hello group!", "isGroup": true}'`;
+                } else if(type === 'curl-internal') {
+                    return `curl -X POST http://localhost:3000/send \\\n-H "Authorization: Bearer ${apiKey}" \\\n-H "Content-Type: application/json" \\\n-d '{"number": "+8613812345678", "message": "Hello from API!"}'`;
+                } else if(type === 'curl-internal-group') {
+                    return `curl -X POST http://localhost:3000/send \\\n-H "Authorization: Bearer ${apiKey}" \\\n-H "Content-Type: application/json" \\\n-d '{"number": "1234567890@g.us", "message": "Hello group!", "isGroup": true}'`;
+                }
+            }
+            document.querySelectorAll('.copy-btn').forEach(function(btn) {
+                btn.onclick = function() {
+                    var type = btn.getAttribute('data-target');
+                    var curl = getCurl(type);
+                    navigator.clipboard.writeText(curl).then(() => {
+                        btn.textContent = '已复制!';
+                        setTimeout(() => {
+                            btn.textContent = '复制';
+                        }, 1500);
+                    });
+                };
+            });
         }
     });
     </script>

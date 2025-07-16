@@ -42,7 +42,7 @@
             <input type="file" id="image" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp, image/webp">
             <img id="image-preview" style="max-width:180px;max-height:120px;display:none;margin:8px 0;"/>
             <button type="submit">添加定时任务</button>
-            <p id="schedule-status" style="color: lightgreen;"></p>
+            <p id="schedule-status" style="color: rgb(61, 62, 61);"></p>
         </form>
 
         <h2 style="margin-top:32px;">批量发送消息</h2>
@@ -58,7 +58,6 @@
             <button type="submit">开始批量发送</button>
             <p id="batch-send-status"></p>
         </form>
-
 
 
         <h2>WhatsApp Groups</h2>
@@ -114,7 +113,7 @@
                         <strong>Cron:</strong> ${task.cron}<br>
                         <strong>To:</strong> ${task.number} ${task.isGroup ? '(Group)' : ''}<br>
                         <strong>Message:</strong> "${task.message}"<br>
-                        ${task.imagePath ? `<strong>Image:</strong> <a href="${task.imagePath.replace(/^.*uploads\//, '/uploads/')}" target="_blank">View Image</a><br>` : ''}
+                        ${task.imagePath ? `<strong>图片文件名:</strong> ${task.imagePath.split('/').pop()}<br><strong>Image:</strong> <a href="${task.imagePath.replace(/^.*uploads\//, '/uploads/')}" target="_blank">View Image</a><br>` : ''}
                         <button onclick="cancelTask('${task.id}')">Cancel</button>
                     </li>
                 `).join('') + '</ul>';
@@ -323,6 +322,20 @@
         // Initial fetch
         fetchTasks();
         fetchGroupsButton.addEventListener('click', fetchGroups);
+
+        // 一键复制 Curl 示例
+        Array.from(document.getElementsByClassName('copy-btn')).forEach(btn => {
+            btn.onclick = function() {
+                const codeId = btn.getAttribute('data-target');
+                const code = document.getElementById(codeId).innerText;
+                navigator.clipboard.writeText(code).then(() => {
+                    btn.textContent = '已复制!';
+                    setTimeout(() => {
+                        btn.textContent = btn.textContent.includes('外部') ? '复制外部 Curl' : '复制内部 Curl';
+                    }, 1500);
+                });
+            };
+        });
     </script>
 </body>
 </html>
