@@ -36,7 +36,7 @@
                 if (response.ok) {
                     loginStatus.textContent = '登录成功!';
                     loginStatus.style.color = 'lightgreen';
-                    window.location.href = '/'; // Redirect to main page
+                    window.location.href = '/index.html'; // Redirect to main page
                 } else {
                     loginStatus.textContent = result.message || '登录失败。';
                     loginStatus.style.color = 'red';

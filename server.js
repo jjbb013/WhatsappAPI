@@ -174,8 +174,6 @@ function broadcast(data) {
 
 // --- Express API and Web Server ---
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
-
 // --- Session Middleware ---
 app.use(session({
     secret: 'a-static-secret-key-that-is-not-easily-guessable', // A strong, unique secret for the session
@@ -223,13 +221,37 @@ app.post('/logout', (req, res) => {
     });
 });
 
+// 一键重置 WhatsApp 登录（删除 session 和 cache）
+app.post('/reset-session', (req, res) => {
+    const authDir = path.join(__dirname, '.wwebjs_auth');
+    const cacheDir = path.join(__dirname, '.wwebjs_cache');
+    let success = true;
+    let message = '重置成功';
+    try {
+        if (fs.existsSync(authDir)) {
+            fs.rmSync(authDir, { recursive: true, force: true });
+        }
+        if (fs.existsSync(cacheDir)) {
+            fs.rmSync(cacheDir, { recursive: true, force: true });
+        }
+    } catch (err) {
+        success = false;
+        message = '重置失败: ' + err.message;
+    }
+    res.json({ success, message });
+});
+
 // Serve login page
 app.get('/login.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-// --- Protected Routes ---
-app.get('/', checkAuthForPages, (req, res) => {
+// 主页直接重定向到登录页，防止未登录直接扫码
+app.get('/', (req, res) => {
+    res.redirect('/login.html');
+});
+// index.html 仍然需要登录校验
+app.get('/index.html', checkAuthForPages, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
@@ -425,6 +447,9 @@ app.get('/test-send', async (req, res) => {
         res.status(500).json({ success: false, error: 'Failed to send test message.', details: error.message });
     }
 });
+
+// 路由注册全部结束后，最后一行加上静态资源中间件
+app.use(express.static(path.join(__dirname, 'public')));
 
 server.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT}`);

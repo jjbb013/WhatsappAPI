@@ -28,6 +28,7 @@
                 <code id="api-key"></code>
                 <button id="copy-button">复制</button>
             </div>
+            <button id="reset-session-btn" style="margin-top:18px;background:#e74c3c;color:#fff;font-size:1em;padding:8px 18px;border:none;border-radius:4px;cursor:pointer;">退出 WhatsApp 登录</button>
             <p class="usage-info">
                 <strong>使用示例：</strong><br>
                 <pre><code>curl -X POST http://localhost:3000/send \
@@ -39,5 +40,26 @@
         </div>
     </div>
     <script src="client.js"></script>
+    <script>
+    // 新增退出登录按钮逻辑
+    document.addEventListener('DOMContentLoaded', function() {
+        var resetBtn = document.getElementById('reset-session-btn');
+        if (resetBtn) {
+            resetBtn.onclick = function() {
+                if(confirm('确定要退出 WhatsApp 登录并清除所有会话数据吗？')) {
+                    fetch('/reset-session', { method: 'POST' })
+                        .then(res => res.json())
+                        .then(data => {
+                            alert(data.message);
+                            window.location.reload();
+                        })
+                        .catch(() => {
+                            alert('重置失败');
+                        });
+                }
+            };
+        }
+    });
+    </script>
 </body>
 </html>

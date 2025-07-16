@@ -1,8 +1,11 @@
 # 使用官方 Node.js 18 镜像
-FROM node:18
+FROM node:18-bullseye
 
 # 设置工作目录
 WORKDIR /usr/src/app
+
+# 更换为阿里云源（适合中国大陆环境）
+RUN sed -i 's@http://deb.debian.org/debian@https://mirrors.aliyun.com/debian@g' /etc/apt/sources.list
 
 # 安装 puppeteer/Chromium 依赖
 RUN apt-get update && apt-get install -y \
@@ -24,7 +27,7 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 COPY package*.json ./
 
 # 安装依赖
-RUN npm install --production
+RUN npm install
 
 # 复制项目源码
 COPY . .
