@@ -18,7 +18,7 @@
 
 
         <h2>新建定时任务</h2>
-        <form id="schedule-form">
+        <form id="schedule-form" enctype="multipart/form-data">
             <div class="form-group">
                 <label for="cron">Cron 表达式：</label>
                 <input type="text" id="cron" name="cron" placeholder="如：* * * * *" required style="width:100%;font-size:1.1em;">
@@ -39,19 +39,22 @@
                 <label for="isGroup">这是一个群组ID</label>
             </div>
             <textarea id="message" placeholder="要发送的消息内容" required></textarea>
-            <input type="file" id="image" accept="image/png, image/jpeg, image/jpg">
+            <input type="file" id="image" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp, image/webp">
+            <img id="image-preview" style="max-width:180px;max-height:120px;display:none;margin:8px 0;"/>
             <button type="submit">添加定时任务</button>
             <p id="schedule-status" style="color: lightgreen;"></p>
         </form>
 
         <h2 style="margin-top:32px;">批量发送消息</h2>
-        <form id="batch-send-form">
-            <textarea id="batch-numbers" placeholder="每行一个号码或群组ID（如：+8613812345678 或 1234567890@g.us）" required></textarea>
+        <form id="batch-send-form" enctype="multipart/form-data">
+            <textarea id="batch-numbers" placeholder="每行一个号码或群组ID（如：+8613812345678 或 1234567890@g.us）\n【建议：不要将私人号码和群组ID混合群发，建议统一发群组或统一发私人】" required></textarea>
             <input type="text" id="batch-message" placeholder="要发送的消息内容" required>
             <div class="checkbox-container">
                 <input type="checkbox" id="batch-isGroup">
                 <label for="batch-isGroup">这些是群组ID</label>
             </div>
+            <input type="file" id="batch-image" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp, image/webp">
+            <img id="batch-image-preview" style="max-width:180px;max-height:120px;display:none;margin:8px 0;"/>
             <button type="submit">开始批量发送</button>
             <p id="batch-send-status"></p>
         </form>
@@ -221,40 +224,98 @@
             }
         }
 
+        // 定时任务图片预览和校验
+        const imageInput = document.getElementById('image');
+        const imagePreview = document.getElementById('image-preview');
+        imageInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                if (!/^image\/(png|jpeg|jpg|gif|bmp|webp)$/.test(file.type)) {
+                    alert('仅支持图片格式：png, jpg, jpeg, gif, bmp, webp');
+                    this.value = '';
+                    imagePreview.style.display = 'none';
+                    return;
+                }
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('图片大小不能超过10MB');
+                    this.value = '';
+                    imagePreview.style.display = 'none';
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = e => {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                imagePreview.style.display = 'none';
+            }
+        });
+        // 批量群发图片预览和校验
+        const batchImageInput = document.getElementById('batch-image');
+        const batchImagePreview = document.getElementById('batch-image-preview');
+        batchImageInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                if (!/^image\/(png|jpeg|jpg|gif|bmp|webp)$/.test(file.type)) {
+                    alert('仅支持图片格式：png, jpg, jpeg, gif, bmp, webp');
+                    this.value = '';
+                    batchImagePreview.style.display = 'none';
+                    return;
+                }
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('图片大小不能超过10MB');
+                    this.value = '';
+                    batchImagePreview.style.display = 'none';
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = e => {
+                    batchImagePreview.src = e.target.result;
+                    batchImagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                batchImagePreview.style.display = 'none';
+            }
+        });
+
         batchSendForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const numbers = document.getElementById('batch-numbers').value.split('\n').filter(n => n.trim() !== '');
+            const numbers = document.getElementById('batch-numbers').value.split('\n').map(s => s.trim()).filter(Boolean);
             const message = document.getElementById('batch-message').value;
             const isGroup = document.getElementById('batch-isGroup').checked;
-
-            if (numbers.length === 0 || !message) {
-                batchSendStatus.textContent = 'Please enter at least one number and a message.';
-                batchSendStatus.style.color = 'red';
-                return;
+            const imageFile = document.getElementById('batch-image').files[0];
+            const formData = new FormData();
+            formData.append('numbers', JSON.stringify(numbers));
+            formData.append('message', message);
+            formData.append('isGroup', isGroup);
+            if (imageFile) {
+                formData.append('image', imageFile);
             }
-
-            batchSendStatus.textContent = 'Starting batch send...';
-            batchSendStatus.style.color = 'lightgreen';
-
             try {
                 const response = await fetch('/batch-send', {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
+                    headers: {
                         'Authorization': `Bearer ${sessionStorage.getItem('whatsappApiKey')}`
                     },
-                    body: JSON.stringify({ numbers, message, isGroup })
+                    body: formData
                 });
-                const result = await response.json();
-                if (response.ok) {
-                    batchSendStatus.textContent = result.message;
-                    batchSendForm.reset();
-                } else {
-                    batchSendStatus.textContent = `Error: ${result.error}`;
-                    batchSendStatus.style.color = 'red';
+                if (response.status === 401) {
+                    window.location.href = '/login.html';
+                    return;
                 }
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || '批量发送失败');
+                }
+                batchSendStatus.textContent = result.message;
+                batchSendStatus.style.color = 'lightgreen';
+                batchSendForm.reset();
+                batchImagePreview.style.display = 'none';
             } catch (error) {
-                batchSendStatus.textContent = 'An unexpected error occurred.';
+                batchSendStatus.textContent = `错误: ${error.message}`;
                 batchSendStatus.style.color = 'red';
             }
         });

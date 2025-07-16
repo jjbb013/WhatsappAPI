@@ -29,13 +29,17 @@ if (!fs.existsSync(UPLOADS_DIR)) {
 const upload = multer({
     dest: UPLOADS_DIR,
     fileFilter: (req, file, cb) => {
-        if (file.mimetype === 'image/png' || file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg') {
+        // 支持常见图片格式
+        const allowedTypes = [
+            'image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/bmp', 'image/webp'
+        ];
+        if (allowedTypes.includes(file.mimetype)) {
             cb(null, true);
         } else {
-            cb(new Error('Only .png, .jpg and .jpeg format allowed!'), false);
+            cb(new Error('仅支持图片格式：png, jpg, jpeg, gif, bmp, webp'), false);
         }
     },
-    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
 let apiKey = null;
@@ -303,7 +307,7 @@ app.post('/send', async (req, res) => {
 });
 
 // Batch Send API
-app.post('/batch-send', async (req, res) => {
+app.post('/batch-send', upload.single('image'), async (req, res) => {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({ error: 'Authorization header missing or invalid.' });
@@ -316,12 +320,25 @@ app.post('/batch-send', async (req, res) => {
 
     // Check if client is ready before attempting to send message
     if (!client.info) {
+        // 清理上传的图片
+        if (req.file) fs.unlinkSync(req.file.path);
         return res.status(503).json({ error: 'WhatsApp client not ready. Please ensure it is connected.' });
     }
 
-    const { numbers, message, isGroup = false } = req.body;
+    let { numbers, message, isGroup = false } = req.body;
+    const imagePath = req.file ? req.file.path : null;
+
+    // 兼容 FormData 传递的 JSON 字符串
+    if (typeof numbers === 'string') {
+        try {
+            numbers = JSON.parse(numbers);
+        } catch (e) {
+            numbers = [];
+        }
+    }
 
     if (!numbers || !Array.isArray(numbers) || numbers.length === 0 || !message) {
+        if (imagePath) fs.unlinkSync(imagePath);
         return res.status(400).json({ error: 'Invalid request. "numbers" must be a non-empty array and "message" must be provided.' });
     }
 
@@ -336,12 +353,23 @@ app.post('/batch-send', async (req, res) => {
                 await new Promise(resolve => setTimeout(resolve, delay));
 
                 const chatId = `${number.replace(/\+/g, '')}${suffix}`;
-                console.log(`Sending message to ${number}`);
-                await client.sendMessage(chatId, message);
+                if (imagePath && fs.existsSync(imagePath)) {
+                    const fileData = fs.readFileSync(imagePath, { encoding: 'base64' });
+                    const mimeType = mime.lookup(imagePath) || 'image/png';
+                    const fileName = path.basename(imagePath);
+                    const media = new MessageMedia(mimeType, fileData, fileName);
+                    await client.sendMessage(chatId, media, { caption: message });
+                } else {
+                    await client.sendMessage(chatId, message);
+                }
                 console.log(`Message sent to ${number}`);
             } catch (error) {
                 console.error(`Failed to send message to ${number}:`, error.message);
             }
+        }
+        // 批量群发结束后删除图片
+        if (imagePath && fs.existsSync(imagePath)) {
+            fs.unlinkSync(imagePath);
         }
         console.log('Batch sending complete.');
     })();
