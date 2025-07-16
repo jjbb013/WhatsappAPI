@@ -221,12 +221,12 @@ app.post('/logout', (req, res) => {
     });
 });
 
-// 一键重置 WhatsApp 登录（删除 session 和 cache）
+// 一键重置 WhatsApp 登录（删除 session 和 cache，并销毁登录 session，自动重启服务）
 app.post('/reset-session', (req, res) => {
     const authDir = path.join(__dirname, '.wwebjs_auth');
     const cacheDir = path.join(__dirname, '.wwebjs_cache');
     let success = true;
-    let message = '重置成功';
+    let message = '重置成功，服务即将重启';
     try {
         if (fs.existsSync(authDir)) {
             fs.rmSync(authDir, { recursive: true, force: true });
@@ -238,7 +238,16 @@ app.post('/reset-session', (req, res) => {
         success = false;
         message = '重置失败: ' + err.message;
     }
-    res.json({ success, message });
+    req.session.destroy(err => {
+        if (err) {
+            return res.json({ success: false, message: '重置成功，但注销登录失败: ' + err.message });
+        }
+        res.json({ success, message });
+        // 1秒后自动退出进程，触发外部重启
+        setTimeout(() => {
+            process.exit(0);
+        }, 1000);
+    });
 });
 
 // Serve login page

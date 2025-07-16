@@ -50,8 +50,12 @@
                     fetch('/reset-session', { method: 'POST' })
                         .then(res => res.json())
                         .then(data => {
-                            alert(data.message);
-                            window.location.reload();
+                            if(data.success) {
+                                alert(data.message);
+                                window.location.href = '/login.html';
+                            } else {
+                                alert(data.message || '重置失败');
+                            }
                         })
                         .catch(() => {
                             alert('重置失败');
