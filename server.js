@@ -11,6 +11,14 @@ const multer = require('multer');
 const session = require('express-session');
 const mime = require('mime-types'); // 需在顶部引入
 
+// 在顶部引入代理配置
+let proxyConfig = { enabled: false };
+try {
+    proxyConfig = require('./proxy.config.js');
+} catch (e) {
+    // 未配置代理时忽略
+}
+
 const app = express();
 const server = http.createServer(app);
 const wss = new Server({ server });
@@ -99,6 +107,7 @@ function loadTasks() {
 }
 
 // --- WhatsApp Client Setup ---
+// puppeteer 启动参数支持代理
 const client = new Client({
     authStrategy: new LocalAuth(), // Persist session
     puppeteer: {
@@ -328,6 +337,11 @@ app.post('/batch-send', upload.single('image'), async (req, res) => {
     let { numbers, message, isGroup = false } = req.body;
     const imagePath = req.file ? req.file.path : null;
 
+    // 统一换行符为 \n，支持多行文本
+    if (typeof message === 'string') {
+        message = message.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    }
+
     // 兼容 FormData 传递的 JSON 字符串
     if (typeof numbers === 'string') {
         try {
@@ -377,8 +391,13 @@ app.post('/batch-send', upload.single('image'), async (req, res) => {
 
 // Schedule Task API
 app.post('/schedule', checkAuthForApi, upload.single('image'), (req, res) => {
-    const { cron, number, message, isGroup } = req.body;
+    let { cron, number, message, isGroup } = req.body;
     const imagePath = req.file ? req.file.path : null; // Get path of uploaded image
+
+    // 统一换行符为 \n，支持多行文本
+    if (typeof message === 'string') {
+        message = message.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    }
 
     // Check if client is ready before attempting to schedule message
     if (!client.info) {
