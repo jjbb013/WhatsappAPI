@@ -1,12 +1,35 @@
 # Ignore node_modules, it will be installed in the container
 node_modules
+npm-debug.log*
 
 # Ignore local session data, it should be mounted as a volume
 .wwebjs_auth
+
+# Ignore uploaded files, they should be mounted as a volume
+uploads
 
 # Ignore git files
 .git
 .gitignore
 
-# Ignore Dockerfile
+# Ignore Docker files
 Dockerfile
+.dockerignore
+
+# Ignore development files
+northflank.json
+*.md
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore IDE files
+.vscode
+.idea
+*.swp
+*.swo
+
+# Ignore test files
+test_*.js
+*.test.js

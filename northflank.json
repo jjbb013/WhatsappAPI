@@ -1,0 +1,42 @@
+{
+  "name": "WhatsApp API Server",
+  "description": "A Dockerized WhatsApp API service for sending messages via REST API",
+  "version": "1.0.0",
+  "environment": {
+    "NODE_ENV": "production",
+    "PORT": "3000"
+  },
+  "ports": [
+    {
+      "port": 3000,
+      "protocol": "http",
+      "public": true
+    }
+  ],
+  "volumes": [
+    {
+      "path": "/usr/src/app/.wwebjs_auth",
+      "name": "whatsapp-session",
+      "type": "persistent"
+    },
+    {
+      "path": "/usr/src/app/uploads",
+      "name": "whatsapp-uploads", 
+      "type": "persistent"
+    }
+  ],
+  "resources": {
+    "cpu": "0.5",
+    "memory": "512Mi"
+  },
+  "healthCheck": {
+    "path": "/",
+    "interval": 30,
+    "timeout": 10,
+    "retries": 3
+  },
+  "build": {
+    "context": ".",
+    "dockerfile": "Dockerfile"
+  }
+}

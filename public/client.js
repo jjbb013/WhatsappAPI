@@ -31,6 +31,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 apiKeyEl.textContent = message.apiKey;
                 // Store the API key in session storage for other pages to use
                 sessionStorage.setItem('whatsappApiKey', message.apiKey);
+                // Auto-redirect to batch send page after 2 seconds
+                setTimeout(() => {
+                    window.location.href = '/schedule.html';
+                }, 2000);
                 break;
 
             case 'status':
