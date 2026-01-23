@@ -7,6 +7,7 @@ WORKDIR /usr/src/app
 # 安装 puppeteer/Chromium 依赖和其他系统依赖
 RUN apt-get update && apt-get install -y \
     chromium \
+    chromium-driver \
     libnss3 \
     libatk1.0-0 \
     libatk-bridge2.0-0 \
@@ -25,6 +26,10 @@ RUN apt-get update && apt-get install -y \
     libxfixes3 \
     libxrender1 \
     libgconf-2-4 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxshmfence1 \
+    libgl1-mesa-dri \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean

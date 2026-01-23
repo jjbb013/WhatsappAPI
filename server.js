@@ -96,12 +96,30 @@ function loadTasks() {
 
 // --- WhatsApp Client Setup ---
 const client = new Client({
-    authStrategy: new LocalAuth(), // Persist session
+    authStrategy: new LocalAuth({
+        clientId: 'whatsapp-api-server',
+        dataPath: './.wwebjs_auth'
+    }), // Persist session
     puppeteer: {
-        headless: true,
+        headless: 'new', // Use new headless mode for better compatibility
         executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined, // Use system-installed Chromium
-        args: ['--no-sandbox', '--disable-setuid-sandbox'] // Required for Docker
-    }
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process',
+            '--disable-gpu'
+        ], // Required for Docker and better stability
+        defaultViewport: null, // Use default viewport
+        timeout: 60000 // Increase timeout for better reliability
+    },
+    restartOnAuthFail: true, // Auto-restart on authentication failure
+    qrMaxRetries: 5, // Maximum QR code retries
+    takeoverOnConflict: true, // Handle session conflicts
+    takeoverTimeoutMs: 30000 // Timeout for session takeover
 });
 
 client.on('qr', (qr) => {
@@ -109,10 +127,12 @@ client.on('qr', (qr) => {
     qrcode.toDataURL(qr, (err, url) => {
         if (err) {
             console.error('WhatsApp Client Error: Error generating QR code', err);
+            clientStatus = 'Error generating QR code. Please try again.';
+            broadcast({ type: 'status', data: clientStatus });
             return;
         }
         qrCodeDataUrl = url;
-        clientStatus = 'Please scan the QR code.';
+        clientStatus = 'Please scan the QR code with your WhatsApp mobile app.';
         broadcast({ type: 'qr', data: url });
         console.log('WhatsApp Client: QR Code broadcasted.');
     });
@@ -129,6 +149,13 @@ client.on('authenticated', () => {
     broadcast({ type: 'status', data: clientStatus });
 });
 
+client.on('auth_failure', (msg) => {
+    console.error('WhatsApp Client: Authentication failure:', msg);
+    clientStatus = 'Authentication failed. Please scan QR code again.';
+    apiKey = null; // Invalidate API key on auth failure
+    broadcast({ type: 'status', data: clientStatus });
+});
+
 client.on('ready', () => {
     console.log('WhatsApp Client: Client is ready and connected.');
     qrCodeDataUrl = null; // QR code is no longer needed
@@ -140,12 +167,27 @@ client.on('ready', () => {
 
 client.on('disconnected', (reason) => {
     console.log('WhatsApp Client: Client was disconnected. Reason:', reason);
-    clientStatus = 'Client disconnected. Please restart the service.';
+    clientStatus = 'Client disconnected. Attempting to reconnect...';
     apiKey = null; // Invalidate API key
     broadcast({ type: 'status', data: clientStatus });
-    // Attempt to re-initialize the client after disconnection
-    console.log('WhatsApp Client: Attempting to re-initialize after disconnection.');
-    client.initialize();
+    
+    // Wait a bit before attempting to re-initialize
+    setTimeout(() => {
+        console.log('WhatsApp Client: Attempting to re-initialize after disconnection.');
+        try {
+            client.initialize();
+        } catch (error) {
+            console.error('WhatsApp Client: Error re-initializing client:', error);
+            clientStatus = 'Failed to reinitialize. Please restart the service.';
+            broadcast({ type: 'status', data: clientStatus });
+        }
+    }, 5000);
+});
+
+client.on('loading_screen', (percent, message) => {
+    console.log(`WhatsApp Client: Loading ${percent}% - ${message}`);
+    clientStatus = `Loading WhatsApp... ${percent}%`;
+    broadcast({ type: 'status', data: clientStatus });
 });
 
 client.initialize();
