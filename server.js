@@ -246,8 +246,9 @@ const checkAuthForApi = (req, res, next) => {
 // Login API
 app.post('/login', (req, res) => {
     const { password } = req.body;
+    const LOGIN_PASSWORD = process.env.LOGIN_PASSWORD || '984819';
     // 只校验密码
-    if (password === '984819') {
+    if (password === LOGIN_PASSWORD) {
         req.session.loggedIn = true;
         res.status(200).json({ success: true, message: 'Logged in successfully.' });
     } else {
@@ -431,6 +432,24 @@ app.post('/cancel-task', checkAuthForApi, (req, res) => {
         console.log(`Task ${id} not found.`);
         res.status(404).json({ error: 'Task not found.' });
     }
+});
+
+// Health Check API
+app.get('/health', (req, res) => {
+    const health = {
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        whatsapp: {
+            connected: client.info ? true : false,
+            status: clientStatus
+        },
+        memory: process.memoryUsage(),
+        version: require('./package.json').version
+    };
+    
+    const statusCode = client.info ? 200 : 503;
+    res.status(statusCode).json(health);
 });
 
 // Get All Groups API

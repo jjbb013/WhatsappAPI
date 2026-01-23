@@ -42,8 +42,9 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# 创建必要的目录
-RUN mkdir -p .wwebjs_auth uploads
+# 创建必要的目录（确保Addon挂载点存在）
+RUN mkdir -p .wwebjs_auth uploads \
+    && chown -R node:node .wwebjs_auth uploads
 
 # 复制依赖声明
 COPY package*.json ./
@@ -65,7 +66,7 @@ EXPOSE 3000
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
+  CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
 
 # 启动服务
 CMD [ "node", "server.js" ]
