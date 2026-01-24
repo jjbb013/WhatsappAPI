@@ -50,7 +50,7 @@ RUN mkdir -p .wwebjs_auth uploads \
 COPY package*.json ./
 
 # 安装依赖
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install --only=production && npm cache clean --force
 
 # 复制项目源码
 COPY . .
