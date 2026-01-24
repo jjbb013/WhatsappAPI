@@ -302,14 +302,19 @@ app.post('/send', async (req, res) => {
         return res.status(400).json({ error: 'Missing "number" or "message" in request body.' });
     }
     
+    // Clean the number and construct chatId
+    const cleanNumber = number.replace(/\+/g, '').replace(/[^0-9]/g, '');
     const suffix = isGroup ? '@g.us' : '@c.us';
-    const chatId = `${number.replace(/\+/g, '')}${suffix}`;
+    const chatId = `${cleanNumber}${suffix}`;
 
     try {
         await client.sendMessage(chatId, message);
         res.status(200).json({ success: true, message: 'Message sent successfully.' });
     } catch (error) {
         console.error('Failed to send message:', error);
+        if (error.message.includes('markedUnread')) {
+            console.error(`WhatsApp client error - this might be a temporary issue with ${chatId}`);
+        }
         res.status(500).json({ success: false, error: 'Failed to send message.', details: error.message });
     }
 });
@@ -347,12 +352,26 @@ app.post('/batch-send', async (req, res) => {
                 const delay = Math.floor(Math.random() * (10000 - 5000 + 1)) + 5000; // Random delay between 5-10 seconds
                 await new Promise(resolve => setTimeout(resolve, delay));
 
-                const chatId = `${number.replace(/\+/g, '')}${suffix}`;
-                console.log(`Sending message to ${number}`);
+                // Clean the number and construct chatId
+                const cleanNumber = number.replace(/\+/g, '').replace(/[^0-9]/g, '');
+                const chatId = `${cleanNumber}${suffix}`;
+                
+                console.log(`Sending message to ${chatId}`);
+                
+                // Check if client is ready before sending
+                if (!client.info) {
+                    console.error(`WhatsApp client not ready for ${chatId}. Skipping...`);
+                    continue;
+                }
+                
                 await client.sendMessage(chatId, message);
-                console.log(`Message sent to ${number}`);
+                console.log(`Message sent to ${chatId}`);
             } catch (error) {
                 console.error(`Failed to send message to ${number}:`, error.message);
+                // Add more detailed error logging for debugging
+                if (error.message.includes('markedUnread')) {
+                    console.error(`WhatsApp client error - this might be a temporary issue with the group ${number}`);
+                }
             }
         }
         console.log('Batch sending complete.');
